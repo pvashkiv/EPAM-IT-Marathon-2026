@@ -1,0 +1,40 @@
+<article class="card" [class.card--me]="isMe()">
+  <header class="card-header">
+    <h2 class="card-title">{{ title() }}</h2>
+
+    <span class="cart-status" [class.cart-status--submitted]="participant().isSubmitted">
+      <span class="cart-status-dot" aria-hidden="true"></span>
+      {{ statusLabel() }}
+    </span>
+
+    @if (canRemove()) {
+      <button type="button" class="remove-button" [attr.aria-label]="removeLabel()" (click)="onRemove()">
+        Remove Guest
+      </button>
+    }
+  </header>
+
+  @if (lines().length) {
+    <ul class="lines">
+      @for (line of lines(); track line.dish.id) {
+        <li class="line">
+          @if (line.dish.imageUrl) {
+            <img class="thumb" [src]="line.dish.imageUrl" alt="" width="40" height="40" />
+          } @else {
+            <span class="thumb thumb--initial" aria-hidden="true">{{ line.initial }}</span>
+          }
+          <span class="line-name">{{ line.dish.name }}</span>
+          <span class="line-quantity">× {{ line.quantity }}</span>
+          <span class="line-price">{{ line.lineTotal | currency }}</span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="empty">No dishes yet</p>
+  }
+
+  <footer class="subtotal">
+    <span>Subtotal</span>
+    <span>{{ subtotal() | currency }}</span>
+  </footer>
+</article>
