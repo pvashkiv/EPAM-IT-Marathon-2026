@@ -6,12 +6,13 @@
 
 .card {
   padding: 16px;
+  border: 1px solid color.$neutral-200;
   border-radius: 12px;
   background: color.$neutral-0;
 }
 
 .card--me {
-  outline: 1px solid color.$green-150;
+  border-color: color.$green-150;
 }
 
 .card-header {
