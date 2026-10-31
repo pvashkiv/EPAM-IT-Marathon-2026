@@ -171,6 +171,13 @@
           </button>
 
           @if (isGroupReservation()) {
+            <button
+              type="button"
+              class="button button--secondary button--large"
+              (click)="isInviteOpen.set(true)"
+            >
+              Invite Guests
+            </button>
             <a
               class="button button--secondary button--large"
               [routerLink]="['/reservations', r().id, 'group-order']"
@@ -301,4 +308,10 @@
     (closeModal)="closeWaiterOrderModal()"
     (placeOrder)="onWaiterOrderCreated($event)"
   />
+}
+
+@if (isInviteOpen()) {
+  <app-modal title="Invite Guests" (closed)="isInviteOpen.set(false)">
+    <app-invite-link-panel [reservationId]="r().id" />
+  </app-modal>
 }

@@ -1232,3 +1232,24 @@ Errors: `403` not the owner, `404` group reservation not found.
 ### `DELETE` /guest/groups/{groupReservationId}/sessions/{guestSessionId}
 Owner only (Cognito). Removes a guest and returns the updated group snapshot — same schema as `GET /guest/groups/{groupReservationId}/sessions`.
 Errors: `400` session belongs to another group, owner session, or group not `Open`; `403` not the owner; `404` session or group reservation not found.
+
+### `GET` /guest/sessions/{guestSessionId}/group
+Guest only: `Authorization: Bearer <guest session token>`, the same as the other `/guest/sessions/...` endpoints.
+A live board of the group for the guest. It deliberately contains no session ids, per-person dishes or amounts.
+
+Response: 200 OK
+```json
+{
+  "status": "Open",
+  "maxGuests": 4,
+  "participants": [
+    { "name": "Pablo", "isOwner": true, "isMe": false, "isSubmitted": true, "dishCount": 2 },
+    { "name": "Anna", "isOwner": false, "isMe": true, "isSubmitted": false, "dishCount": 1 }
+  ],
+  "favourites": [
+    { "dishId": "dish1", "name": "Spring Salad", "imageUrl": "string", "price": 12, "count": 3 }
+  ]
+}
+```
+`favourites` holds the group's 3 most ordered dishes, most popular first.
+Errors: `401` invalid guest token, `404` session or group reservation not found.

@@ -110,37 +110,6 @@ describe('ReservationInviteModalComponent', () => {
     expect(element.querySelector<HTMLButtonElement>('button[aria-label="Copy invite link"]')!.disabled).toBeTrue();
   });
 
-  it('does not copy or toast when the token has not loaded yet', async () => {
-    guestInviteService.getInviteToken$.and.returnValue(new Subject<GroupInviteToken>());
-    render(BASE_RESERVATION);
-    const writeText = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
-
-    await component.onCopyLink();
-
-    expect(writeText).not.toHaveBeenCalled();
-    expect(toastService.success).not.toHaveBeenCalled();
-  });
-
-  it('copies the link and shows a success toast', async () => {
-    render(BASE_RESERVATION);
-    const writeText = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
-
-    await component.onCopyLink();
-
-    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/join/abc123xyz`);
-    expect(toastService.success).toHaveBeenCalledWith('Share it with your friends.', 'Link copied!');
-  });
-
-  it('shows an error toast when copying fails', async () => {
-    render(BASE_RESERVATION);
-    spyOn(navigator.clipboard, 'writeText').and.rejectWith(new Error('denied'));
-
-    await component.onCopyLink();
-
-    expect(toastService.error).toHaveBeenCalled();
-    expect(toastService.success).not.toHaveBeenCalled();
-  });
-
   it('closes and navigates to reservations on View Reservation', () => {
     render(BASE_RESERVATION);
     spyOn(component.closed, 'emit');

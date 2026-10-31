@@ -4,6 +4,9 @@
       <h1 class="page-title">Group Pre-Order</h1>
       @if (loadState() === 'ready') {
         <span class="status-badge" [class.status-badge--sent]="!isOpen()">{{ statusLabel() }}</span>
+        @if (isOpen()) {
+          <button type="button" class="invite-button" (click)="isInviteOpen.set(true)">Invite Guests</button>
+        }
       }
     </div>
 
@@ -118,6 +121,12 @@
         }
       </footer>
     }
+  }
+
+  @if (isInviteOpen()) {
+    <app-modal title="Invite Guests" (closed)="isInviteOpen.set(false)">
+      <app-invite-link-panel [reservationId]="reservationId" />
+    </app-modal>
   }
 
   @if (isSubmitDialogOpen()) {

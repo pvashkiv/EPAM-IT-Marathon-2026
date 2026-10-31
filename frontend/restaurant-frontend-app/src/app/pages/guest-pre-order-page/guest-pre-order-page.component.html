@@ -1,6 +1,12 @@
 @if (store.status() === 'submitted') {
 <app-guest-preorder-submitted [items]="store.cartItems()" [total]="store.total()" [guestName]="store.guestName()"
     [invite]="store.invite()" (createNew)="store.createNewPreorder()" />
+@if (groupBoard(); as board) {
+<div class="group-board-slot">
+    <app-guest-group-board [board]="board" [canAdd]="false" [updatedAt]="groupBoardUpdatedAt()"
+        [refreshFailed]="groupBoardRefreshFailed()" />
+</div>
+}
 } @else {
 @if (store.inviteError() === 'retryable') {
 <section class="invite-retry" role="alert">
@@ -30,6 +36,13 @@
 </div>
 
 <div class="menu-container">
+    @if (groupBoard(); as board) {
+    <div class="group-board-slot">
+        <app-guest-group-board [board]="board" [canAdd]="canAddFromBoard()" [updatedAt]="groupBoardUpdatedAt()"
+            [refreshFailed]="groupBoardRefreshFailed()" (addFavourite)="addFavourite($event)" />
+    </div>
+    }
+
     <div class="page-navigation">
         <a routerLink="/main">Main page</a>
         <span>›</span>

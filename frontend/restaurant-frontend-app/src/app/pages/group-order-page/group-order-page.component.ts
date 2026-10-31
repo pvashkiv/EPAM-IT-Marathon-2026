@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, defer, EMPTY, exhaustMap, filter, finalize, forkJoin, map, Observable, Subscription, switchMap, tap, timer } from 'rxjs';
 import { ParticipantCardComponent } from '@app/components/group-orders/participant-card/participant-card.component';
+import { InviteLinkPanelComponent } from '@app/components/reservations/invite-link-panel/invite-link-panel.component';
 import { GroupSessionsResponse } from '@app/models/group-orders/group-sessions-response.model';
 import { GroupReservationStatus } from '@app/models/group-orders/group-status.model';
 import { Participant } from '@app/models/group-orders/participant.model';
@@ -18,7 +19,7 @@ import { ConsolidatedLine, LoadState, ParticipantCardView } from './models';
 
 @Component({
   selector: 'app-group-order-page',
-  imports: [CurrencyPipe, DatePipe, ModalComponent, ParticipantCardComponent],
+  imports: [CurrencyPipe, DatePipe, ModalComponent, ParticipantCardComponent, InviteLinkPanelComponent],
   templateUrl: './group-order-page.component.html',
   styleUrl: './group-order-page.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -27,7 +28,7 @@ export class GroupOrderPageComponent implements OnInit {
   private readonly groupOrdersService = inject(GroupOrdersService);
   private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly reservationId = inject(ActivatedRoute).snapshot.paramMap.get('reservationId') ?? '';
+  readonly reservationId = inject(ActivatedRoute).snapshot.paramMap.get('reservationId') ?? '';
 
   private loadSubscription?: Subscription;
   private syncSubscription?: Subscription;
@@ -42,6 +43,7 @@ export class GroupOrderPageComponent implements OnInit {
   readonly refreshFailed = signal(false);
   readonly isSyncing = signal(false);
 
+  readonly isInviteOpen = signal(false);
   readonly isSubmitDialogOpen = signal(false);
   readonly isSubmitting = signal(false);
   readonly guestToRemove = signal<Participant | null>(null);
