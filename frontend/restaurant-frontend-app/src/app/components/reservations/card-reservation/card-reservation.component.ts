@@ -16,6 +16,8 @@ import {
   ReservationStatusCustomer,
 } from '@app/models/reservations/reservation.model';
 import { PlaceOrderWaiterComponent } from '@app/components/place-order-waiter/place-order-waiter.component';
+import { InviteLinkPanelComponent } from '@app/components/reservations/invite-link-panel/invite-link-panel.component';
+import { ModalComponent } from '@app/shared/custom-components/modal/modal.component';
 import { Roles } from '@app/shared/constants/roles';
 import { CustomSelectComponent } from '@app/shared/custom-components/custom-select/custom-select.component';
 
@@ -39,6 +41,8 @@ interface WaiterPreOrderNavigationData {
     RouterLink,
     CustomSelectComponent,
     PlaceOrderWaiterComponent,
+    ModalComponent,
+    InviteLinkPanelComponent,
   ],
   templateUrl: './card-reservation.component.html',
   styleUrl: './card-reservation.component.scss',
@@ -132,6 +136,8 @@ export class CardReservationComponent {
 
   /** Group pre-order needs someone to invite: the owner plus at least one guest. */
   readonly isGroupReservation = computed(() => this.r().guestCount > 1);
+
+  readonly isInviteOpen = signal(false);
 
   readonly canOpenWaiterPreOrder = computed(() => {
     return (

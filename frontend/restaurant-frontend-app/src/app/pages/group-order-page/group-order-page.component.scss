@@ -32,6 +32,18 @@
   background: color.$neutral-200;
 }
 
+.invite-button {
+  margin-left: auto;
+  padding: 6px 14px;
+  border: 1px solid color.$green-400;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: color.$green-600;
+  cursor: pointer;
+}
+
 .status-badge--sent {
   background: color.$orange-100;
 }

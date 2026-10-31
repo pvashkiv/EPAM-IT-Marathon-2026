@@ -1,0 +1,29 @@
+<div class="invite-field">
+  <label class="invite-label" for="invite-link-input">Invite Link</label>
+  <div class="invite-input">
+    <input
+      id="invite-link-input"
+      type="text"
+      readonly
+      [placeholder]="invitePlaceholder()"
+      [value]="inviteLink() ?? ''"
+    />
+    <button
+      type="button"
+      class="icon-button icon-button--small"
+      aria-label="Copy invite link"
+      [disabled]="!inviteLink()"
+      (click)="onCopyLink()"
+    >
+      <img src="assets/svg/copy.svg" alt="" />
+    </button>
+  </div>
+  <p class="invite-hint">You are able to share this link for pre-order with your group.</p>
+</div>
+
+@if (inviteLink()) {
+  <figure class="qr">
+    <div #qrHost class="qr-code" role="img" aria-label="QR code with the invite link"></div>
+    <figcaption class="invite-hint">Or let guests scan it with a phone camera</figcaption>
+  </figure>
+}
