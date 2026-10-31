@@ -226,13 +226,23 @@ The build process generates `src/environments/environment.production.ts` automat
 
 ### 3.3 Upload the bundle to S3
 
-Sync the built files to the frontend bucket:
+Upload the build in three groups, each with its own browser cache policy, then remove stale files.
+Hashed bundles never change, so they are cached for a year; `assets/` keep stable names, so only for a day;
+`index.html` is never cached so a new release is picked up immediately.
 
-```powershell
-aws s3 sync dist/restaurant-frontend-app/browser s3://restaurant-frontend-$ACCOUNT_ID/ --delete
+```bash
+DIST=dist/restaurant-frontend-app/browser
+BUCKET=s3://restaurant-frontend-$ACCOUNT_ID
+
+aws s3 cp $DIST $BUCKET --recursive --exclude "*" --include "*.js" --include "*.css" --include "media/*" --cache-control "public, max-age=31536000, immutable"
+aws s3 cp $DIST $BUCKET --recursive --exclude "*.js" --exclude "*.css" --exclude "media/*" --exclude "index.html" --cache-control "public, max-age=86400"
+aws s3 cp $DIST/index.html $BUCKET/index.html --cache-control "no-cache"
+aws s3 sync $DIST $BUCKET --delete
 ```
 
-The `--delete` flag removes files in S3 that no longer exist in the local build output.
+`aws s3 cp` is used instead of `sync` for the upload because `sync` skips unchanged files and would
+never update their `Cache-Control` metadata. The final `sync --delete` only removes files in S3 that no
+longer exist in the local build output.
 
 Then drop the CloudFront cache so visitors get the new build:
 
