@@ -555,6 +555,9 @@ Response: `200 OK`
 ```
 
 ### `GET` /reservations/{reservationId}/guest-session-id
+Owner only (Cognito). Returns the owner's own guest session in the group, creating it on first call.
+Errors: `403` not the owner, `404` reservation or group reservation not found.
+
 Response: `200 OK`
 ```json
 {
@@ -1180,30 +1183,52 @@ Response: 200 OK
 ```
 
 ### `POST` /group-reservations/{groupReservationId}/submit
-Response: 200 OK
+Owner only (Cognito). Merges the carts of all **submitted** guest sessions into the reservation's order (same `dishId` → quantities summed),
+sets the order status to `SubmittedByCustomer` and the group reservation status to `Submitted`.
+The response is the resulting order content (owner's pre-order + guests' dishes).
+
+Request body:
 ```json
 {
-  "message": "Group reservation pre-order submitted successfully."
+  "reservationId": "string"
 }
 ```
-
-### `GET` /guest/groups/{groupReservationId}/sessions
 Response: 200 OK
 ```json
 [
-  {
-    "id": "string",
-    "groupReservationId": "string",
-    "guestName": "string",
-    "status": "string"
-  }
+  { "dishId": "dish1", "quantity": 3 },
+  { "dishId": "dish2", "quantity": 2 }
 ]
 ```
+Errors:
+- `400` group already submitted / closed, reservation does not belong to the group, no submitted guest sessions, no dishes in submitted sessions, no active order
+- `403` not the owner
+- `404` reservation or group reservation not found
 
-### `DELETE` /guest/groups/{groupReservationId}/sessions/{guestSessionId}
+### `GET` /guest/groups/{groupReservationId}/sessions
+Owner only (Cognito). The owner is always the first participant (`type: "Owner"`); while the group is `Open` their items are
+their own pre-order (`/orders`). `total` is the sum over **all** participants, submitted or not.
+
 Response: 200 OK
 ```json
 {
-  "message": "Guest session removed from group successfully."
+  "participants": [
+    {
+      "id": "session1",
+      "type": "Guest",
+      "name": "Andrii",
+      "items": [
+        { "dish": { "id": "dish1", "name": "Caesar Salad", "price": 180, "imageUrl": "string", "weight": "string" }, "quantity": 2 }
+      ],
+      "total": 360,
+      "isSubmitted": true
+    }
+  ],
+  "total": 360
 }
 ```
+Errors: `403` not the owner, `404` group reservation not found.
+
+### `DELETE` /guest/groups/{groupReservationId}/sessions/{guestSessionId}
+Owner only (Cognito). Removes a guest and returns the updated group snapshot — same schema as `GET /guest/groups/{groupReservationId}/sessions`.
+Errors: `400` session belongs to another group, owner session, or group not `Open`; `403` not the owner; `404` session or group reservation not found.

@@ -1,15 +1,19 @@
 using APIHandler.Constants;
+using APIHandler.Constants.Orders;
 using APIHandler.Entities;
 using APIHandler.Exceptions;
 using APIHandler.Models.GroupReservation;
 using APIHandler.Models.GuestReservation;
 using APIHandler.Repositories.GroupReservations;
 using APIHandler.Repositories.GuestSessions;
+using APIHandler.Repositories.Orders;
 using APIHandler.Repositories.Reservations;
 using APIHandler.Repositories.Tables;
 using APIHandler.Services.Auth;
 using APIHandler.Services.Locations;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace APIHandler.Services.GroupReservations;
@@ -20,7 +24,8 @@ public class GroupReservationService(
     IReservationRepository reservationRepository,
     IGuestSessionRepository guestSessionRepository,
     IUserService userService,
-    ILocationService locationService) : IGroupReservationService
+    ILocationService locationService,
+    IOrderRepository orderRepository) : IGroupReservationService
 {
     private const string DefaultRestaurantName = "Green & Tasty";
 
@@ -142,5 +147,82 @@ public class GroupReservationService(
 
         return new GetGroupInviteTokenResponse(groupReservation.ReservationToken);
     }
+
+    public async Task<IReadOnlyList<SubmittedDishResponse>> SubmitGroupPreOrderAsync(string userId, string groupReservationId, string reservationId)
+    {
+        GroupReservation group = await groupReservationRepository.GetGroupReservationByIdAsync(groupReservationId)
+            ?? throw new GroupReservationNotFoundException();
+
+        Reservation reservation = await reservationRepository.GetReservationByIdAsync(reservationId)
+            ?? throw new ReservationNotFoundException($"Reservation {reservationId} was not found.");
+
+        if (group.ReservationId != reservation.Id)
+            throw new ValidationException("Group reservation does not belong to this reservation.");
+
+        if (reservation.CustomerId != userId)
+            throw new ActionForbiddenException("Only the reservation owner can submit the group pre-order.");
+
+        if (group.Status == GroupReservationStatus.Submitted)
+            throw new GroupReservationSubmittedException();
+
+        if (group.Status != GroupReservationStatus.Open)
+            throw new GroupReservationExpiredException($"Cannot submit order. Group reservation is '{group.Status}'.");
+
+        Order? order = await orderRepository.GetOrderByReservationIdAsync(reservationId);
+        if (order is null || order.Status == OrderStatus.Cancelled)
+            throw new ValidationException("Active order not found for this reservation.");
+
+        List<GuestSession> sessions = await guestSessionRepository.GetAllByGroupReservationIdAsync(groupReservationId);
+
+        // The owner's dishes already live in the order, so only guest carts are merged into it.
+        List<GuestSession> submittedGuestSessions = sessions
+            .Where(s => s.IsSubmitted && !s.IsOwnerSession)
+            .ToList();
+
+        if (submittedGuestSessions.Count == 0)
+            throw new ValidationException("No submitted guest sessions found to consolidate.");
+
+        List<OrderItem> guestDishes = submittedGuestSessions
+            .SelectMany(s => s.Dishes)
+            .Where(d => d.Quantity > 0)
+            .GroupBy(d => d.DishId)
+            .Select(g => new OrderItem { DishId = g.Key, Quantity = g.Sum(d => d.Quantity), State = OrderItemState.Pending })
+            .ToList();
+
+        if (guestDishes.Count == 0)
+            throw new ValidationException("No dishes selected in the submitted guest sessions.");
+
+        // Freeze the owner's own cart so the group snapshot keeps showing it separately from the guests' dishes.
+        GuestSession ownerSession = sessions.FirstOrDefault(s => s.IsOwnerSession)
+            ?? GuestSession.CreateOwnerSession(groupReservationId, userId);
+        ownerSession.Dishes = ActiveDishes(order.Dishes)
+            .Select(d => new OrderItem { DishId = d.DishId, Quantity = d.Quantity, State = d.State })
+            .ToList();
+        ownerSession.IsSubmitted = true;
+
+        foreach (OrderItem guestDish in guestDishes)
+        {
+            OrderItem? existing = order.Dishes.FirstOrDefault(d => d.DishId == guestDish.DishId && d.State != OrderItemState.Canceled);
+            if (existing is not null)
+                existing.Quantity += guestDish.Quantity;
+            else
+                order.Dishes.Add(guestDish);
+        }
+
+        order.Status = OrderStatus.SubmittedByCustomer;
+        await orderRepository.SaveOrderAsync(order);
+        await guestSessionRepository.SaveAsync(ownerSession);
+
+        // Saved last: if anything above fails the group stays Open and the owner can retry.
+        group.Status = GroupReservationStatus.Submitted;
+        await groupReservationRepository.SaveGroupReservationAsync(group);
+
+        return ActiveDishes(order.Dishes)
+            .Select(d => new SubmittedDishResponse(d.DishId, d.Quantity))
+            .ToList();
+    }
+
+    private static IEnumerable<OrderItem> ActiveDishes(IEnumerable<OrderItem> dishes)
+        => dishes.Where(d => d.State != OrderItemState.Canceled && d.Quantity > 0);
 }
 
