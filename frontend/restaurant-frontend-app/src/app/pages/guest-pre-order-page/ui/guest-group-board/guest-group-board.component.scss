@@ -1,0 +1,163 @@
+@use 'app/shared/styles/abstracts/colors' as color;
+
+.board {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid color.$green-150;
+    border-radius: 12px;
+    background: color.$neutral-0;
+}
+
+.board-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+}
+
+.board-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.board-summary,
+.board-updated {
+    font-size: 13px;
+    color: color.$neutral-600;
+}
+
+.board-updated {
+    margin: 0;
+}
+
+.board-updated--error {
+    color: color.$red-400;
+}
+
+.board-note {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: color.$orange-30;
+}
+
+.people,
+.favourites {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.person {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.person--me {
+    background: color.$green-100;
+}
+
+.person-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.badge {
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 400;
+    background: color.$neutral-100;
+}
+
+.person-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: color.$orange-600;
+}
+
+.person-status--ready {
+    color: color.$green-600;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.favourites-title {
+    margin: 4px 0 0;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.favourite {
+    display: grid;
+    grid-template-columns: 40px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+}
+
+.thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.thumb--initial {
+    display: grid;
+    place-items: center;
+    color: color.$green-600;
+    background: color.$green-100;
+}
+
+.favourite-name {
+    display: flex;
+    flex-direction: column;
+    font-weight: 500;
+}
+
+.favourite-count {
+    font-size: 12px;
+    font-weight: 400;
+    color: color.$neutral-600;
+}
+
+.add-button {
+    padding: 4px 14px;
+    border: 1px solid color.$green-400;
+    border-radius: 8px;
+    background: none;
+    font: inherit;
+    color: color.$green-600;
+    cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    .favourite {
+        grid-template-columns: 40px 1fr auto;
+    }
+
+    .favourite-price {
+        display: none;
+    }
+}

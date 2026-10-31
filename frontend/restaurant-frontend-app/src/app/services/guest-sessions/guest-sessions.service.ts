@@ -1,5 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
+import { SKIP_ERROR_TOAST } from '@app/auth/skip-error-toast.context';
+import { GroupBoardResponse } from '@app/models/group-orders/group-board.model';
 import { API_BASE_URL } from '@app/shared/config/api-base-url.token';
 
 export interface CreateGuestSessionRequest {
@@ -71,6 +73,17 @@ export class GuestSessionsService {
             `${this.baseUrl}/guest/sessions/${guestSessionId}/submit`,
             {},
             { headers: this.authHeaders(sessionToken) }
+        );
+    }
+
+    /** Live group board; `silent` skips the global error toast (used by the background refresh). */
+    getGroupBoard(guestSessionId: string, sessionToken: string, options?: { silent?: boolean }) {
+        return this.http.get<GroupBoardResponse>(
+            `${this.baseUrl}/guest/sessions/${guestSessionId}/group`,
+            {
+                headers: this.authHeaders(sessionToken),
+                context: new HttpContext().set(SKIP_ERROR_TOAST, options?.silent ?? false),
+            }
         );
     }
 

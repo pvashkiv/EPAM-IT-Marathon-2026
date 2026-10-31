@@ -1,0 +1,58 @@
+<section class="board" aria-labelledby="group-board-title">
+    <header class="board-header">
+        <h2 id="group-board-title" class="board-title">Your group</h2>
+        <span class="board-summary">{{ joinedLabel() }} · {{ readyLabel() }}</span>
+    </header>
+
+    @if (!isOpen()) {
+        <p class="board-note" role="status">The host has sent the group pre-order to the restaurant.</p>
+    }
+
+    <ul class="people">
+        @for (row of rows(); track row.key) {
+            <li class="person" [class.person--me]="row.isMe">
+                <span class="person-name">
+                    {{ row.name }}
+                    @if (row.badge) {
+                        <span class="badge">{{ row.badge }}</span>
+                    }
+                </span>
+                <span class="person-status" [class.person-status--ready]="row.isSubmitted">
+                    <span class="dot" aria-hidden="true"></span>
+                    {{ row.statusText }}
+                </span>
+            </li>
+        }
+    </ul>
+
+    @if (favourites().length) {
+        <h3 class="favourites-title">Group favourites</h3>
+        <ul class="favourites">
+            @for (dish of favourites(); track dish.dishId) {
+                <li class="favourite">
+                    @if (dish.imageUrl) {
+                        <img class="thumb" [src]="dish.imageUrl" alt="" width="40" height="40" />
+                    } @else {
+                        <span class="thumb thumb--initial" aria-hidden="true">{{ dish.initial }}</span>
+                    }
+                    <span class="favourite-name">
+                        {{ dish.name }}
+                        <span class="favourite-count">× {{ dish.count }} in the group</span>
+                    </span>
+                    <span class="favourite-price">{{ dish.price | currency }}</span>
+                    @if (canAdd()) {
+                        <button type="button" class="add-button" [attr.aria-label]="dish.addLabel" (click)="addFavourite.emit(dish)">
+                            Add
+                        </button>
+                    }
+                </li>
+            }
+        </ul>
+    }
+
+    @if (refreshFailed()) {
+        <p class="board-updated board-updated--error">Couldn’t refresh. Showing data from {{ updatedAt() | date: 'HH:mm:ss' }}</p>
+    } @else if (updatedAt()) {
+        <p class="board-updated">Updated at {{ updatedAt() | date: 'HH:mm:ss' }}</p>
+    }
+</section>

@@ -89,6 +89,16 @@ describe('tokenInterceptor', () => {
       expect(toastService.error).not.toHaveBeenCalled();
     });
 
+    it('honours SKIP_ERROR_TOAST on guest session endpoints too', () => {
+      http
+        .get(GUEST_SESSION_URL, { context: new HttpContext().set(SKIP_ERROR_TOAST, true) })
+        .subscribe({ error: () => undefined });
+
+      httpMock.expectOne(GUEST_SESSION_URL).flush(null, { status: 500, statusText: 'Server Error' });
+
+      expect(toastService.error).not.toHaveBeenCalled();
+    });
+
     it('leaves guest session endpoints without the Authorization header', () => {
       http.get(GUEST_SESSION_URL).subscribe();
 
