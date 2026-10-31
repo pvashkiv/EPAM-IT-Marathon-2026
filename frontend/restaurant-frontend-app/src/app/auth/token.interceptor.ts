@@ -20,7 +20,10 @@ export const tokenInterceptor: HttpInterceptorFn = (
   // IMPORTANT: do not modify Guest endpoints at all.
   // Guest flow uses a different token (guest session token) and we must not touch the body.
   // Otherwise we break POST /guest/sessions payload.
-  if (req.url.includes('/guest/')) {
+  // Exception: /guest/groups/... are the Owner's group pre-order endpoints — they need the
+  // signed-in user's token (Cognito authorizer) and honour SKIP_ERROR_TOAST like any other request.
+  const isGuestSessionRequest = req.url.includes('/guest/') && !req.url.includes('/guest/groups/');
+  if (isGuestSessionRequest) {
     return next(req).pipe(
       catchError((error: HttpErrorResponse) => {
         console.log(error);
