@@ -268,6 +268,62 @@ public class GuestSessionServiceGroupSnapshotTests
         await Assert.ThrowsAsync<GroupReservationSubmittedException>(() => _service.DeleteGuestSessionAsync(OwnerId, GroupId, "gs-anna"));
     }
 
+    private static readonly Dish Cake = new() { Id = "dish-cake", Name = "Cake", Price = 7 };
+    private static readonly Dish Tea = new() { Id = "dish-tea", Name = "Tea", Price = 3 };
+
+    [Fact]
+    public async Task GetGroupBoardAsync_ReturnsWhoIsInAndTheirStatusMarkingTheCaller()
+    {
+        var anna = Guest("gs-anna", "Anna", true, Item(Salad, 2), Item(Soup, 1));
+        var bob = Guest("gs-bob", "Bob", false);
+        _guestSessionRepository.Setup(r => r.GetByGuestSessionId(bob.Id)).ReturnsAsync(bob);
+        GivenSessions(GuestSession.CreateOwnerSession(GroupId, OwnerId), anna, bob);
+        GivenOwnerOrder(OrderStatus.Created, Item(Salad, 1));
+
+        GroupBoardResponse board = await _service.GetGroupBoardAsync(bob.Id);
+
+        Assert.Equal(GroupReservationStatus.Open, board.Status);
+        Assert.Equal(5, board.MaxGuests);
+        Assert.Equal(
+            [("Owner", true, false, true, 1), ("Anna", false, false, true, 3), ("Bob", false, true, false, 0)],
+            board.Participants.Select(p => (p.Name, p.IsOwner, p.IsMe, p.IsSubmitted, p.DishCount)));
+    }
+
+    [Fact]
+    public async Task GetGroupBoardAsync_FavouritesAreTheThreeMostOrderedDishesAcrossTheGroup()
+    {
+        var anna = Guest("gs-anna", "Anna", true, Item(Salad, 2), Item(Soup, 1), Item(Tea, 1));
+        var bob = Guest("gs-bob", "Bob", false, Item(Salad, 1), Item(Cake, 2), Item(Soup, 1));
+        _guestSessionRepository.Setup(r => r.GetByGuestSessionId(anna.Id)).ReturnsAsync(anna);
+        GivenSessions(GuestSession.CreateOwnerSession(GroupId, OwnerId), anna, bob);
+        _dishRepository
+            .Setup(r => r.GetDishesByIdsAsync(It.IsAny<IEnumerable<string>>()))
+            .ReturnsAsync((IEnumerable<string> ids) => new[] { Salad, Soup, Cake, Tea }.Where(d => ids.Contains(d.Id)));
+
+        GroupBoardResponse board = await _service.GetGroupBoardAsync(anna.Id);
+
+        // Salad 3; Cake and Soup tie at 2 and are ordered by name; Tea (1) is cut off.
+        Assert.Equal([("Salad", 3), ("Cake", 2), ("Soup", 2)], board.Favourites.Select(f => (f.Name, f.Count)));
+    }
+
+    [Fact]
+    public async Task GetGroupBoardAsync_SessionNotYetInGroupIndex_IsStillListedAsMe()
+    {
+        var newcomer = Guest("gs-new", "Nina", false);
+        _guestSessionRepository.Setup(r => r.GetByGuestSessionId(newcomer.Id)).ReturnsAsync(newcomer);
+        GivenSessions(GuestSession.CreateOwnerSession(GroupId, OwnerId));
+
+        GroupBoardResponse board = await _service.GetGroupBoardAsync(newcomer.Id);
+
+        Assert.Contains(board.Participants, p => p.IsMe && p.Name == "Nina");
+    }
+
+    [Fact]
+    public async Task GetGroupBoardAsync_UnknownSession_ThrowsGuestSessionNotFound()
+    {
+        await Assert.ThrowsAsync<GuestSessionNotFoundException>(() => _service.GetGroupBoardAsync("missing"));
+    }
+
     [Fact]
     public async Task GetGroupReservationStatusAsync_OwnerSessionRow_IsNotCountedTwice()
     {

@@ -34,6 +34,8 @@ public class GuestSessionService(
     ITableRepository tableRepository,
     IOrderRepository orderRepository) : IGuestSessionService
 {
+    private const int FavouriteDishesCount = 3;
+
     public async Task<bool> IsAuthorizedAsync(string guestSessionToken, string guestSessionId)
     {
         string hash = Convert.ToBase64String(SHA256.HashData(Convert.FromBase64String(guestSessionToken)));
@@ -180,6 +182,45 @@ public class GuestSessionService(
         var sessions = await guestSessionRepository.GetAllByGroupReservationIdAsync(groupReservationId);
 
         return await BuildGroupSnapshotAsync(group, reservation, sessions);
+    }
+
+    public async Task<GroupBoardResponse> GetGroupBoardAsync(string guestSessionId)
+    {
+        GuestSession session = await guestSessionRepository.GetByGuestSessionId(guestSessionId)
+            ?? throw new GuestSessionNotFoundException($"Guest session {guestSessionId} not found.");
+
+        var group = await groupReservationRepository.GetGroupReservationByIdAsync(session.GroupReservationId)
+            ?? throw new GroupReservationNotFoundException();
+
+        var reservation = await reservationRepository.GetReservationByIdAsync(group.ReservationId)
+            ?? throw new ReservationNotFoundException("Parent reservation not found.");
+
+        var sessions = await guestSessionRepository.GetAllByGroupReservationIdAsync(group.GroupReservationId);
+        // The group index is eventually consistent: a session created a moment ago may not be listed yet.
+        if (!sessions.Any(s => s.Id == session.Id))
+            sessions.Add(session);
+
+        GetAllSessionsResponse snapshot = await BuildGroupSnapshotAsync(group, reservation, sessions);
+
+        var participants = snapshot.Participants
+            .Select(p => new GroupBoardParticipant(
+                p.Name,
+                p.Type == ParticipantType.Owner,
+                p.Id == guestSessionId,
+                p.IsSubmitted,
+                p.Items.Sum(i => i.Quantity)))
+            .ToList();
+
+        var favourites = snapshot.Participants
+            .SelectMany(p => p.Items)
+            .GroupBy(i => i.Dish.Id)
+            .Select(g => new GroupFavouriteDish(g.Key, g.First().Dish.Name, g.First().Dish.ImageUrl, g.First().Dish.Price, g.Sum(i => i.Quantity)))
+            .OrderByDescending(f => f.Count)
+            .ThenBy(f => f.Name)
+            .Take(FavouriteDishesCount)
+            .ToList();
+
+        return new GroupBoardResponse(group.Status, reservation.GuestCount, participants, favourites);
     }
 
     public async Task<OwnerSessionResponse> GetOwnerSessionIdAsync(string userId, string reservationId)
