@@ -12,16 +12,26 @@ The host sees every cart live and sends **one** consolidated pre-order to the re
 | Data & auth | DynamoDB · Cognito |
 | Hosting | S3 + CloudFront (frontend) · Syndicate (backend) · Terraform (shared infra) |
 
-## Features
+## What I built
 
-- **Booking:** pick a location, date, time and table; manage your reservations.
-- **Personal pre-order:** order dishes in advance for your own reservation.
+The Owner flow for the group pre-order, end to end: 5 backend endpoints, the host's Group Pre-Order page, the guests' live board, tests and AWS deployment.
+
 - **Group pre-order (host):** a live screen with every guest's cart. It shows a consolidated order with a total for submitted carts only, refreshes every 15 s and has a manual Refresh. The host can remove a guest and submit the whole order in one go.
 - **Invite guests:** an invite link with a copy button and a **QR code**. It is shown after booking and can be reopened anytime from the reservation card or the Group Pre-Order page.
 - **Live group board (guests):** anyone with the invite link sees, without an account:
   - who joined and who is ready;
   - the group's favourite dishes, which they can add to their own cart in one click.
-- **Waiter & admin:** reservation dashboard, notifications, reports.
+- **Seed data:** an idempotent script that fills an empty DynamoDB with locations, tables, dishes and waiters.
+- **AWS deployment:** the backend runs on Lambda + API Gateway with DynamoDB and Cognito. The frontend is served from S3 behind CloudFront.
+
+## Already in the base app
+
+These existed before my work. The only change here is the live group board, added to the guest join page:
+
+- **Booking:** pick a location, date, time and table; manage your reservations.
+- **Personal pre-order:** order dishes in advance for your own reservation.
+- **Guest join page:** a guest opens the invite link, enters a name and builds a cart.
+- **Waiter & admin:** waiter reservation dashboard, notifications, admin reports.
 
 ## How the group pre-order works
 
